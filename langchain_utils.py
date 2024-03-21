@@ -1,13 +1,11 @@
-# from langchain import FAISS
 from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOpenAI
-# from langchain.chat_models import ChatOpenAI
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferWindowMemory, CombinedMemory
 from langchain.prompts import PromptTemplate
 from search_indexing import search_faiss_index
 
-prompt_number_snippets = 1
+prompt_number_snippets = 5
 gpt_model_to_use = 'gpt-3.5-turbo'
 gpt_max_tokens = 1000
 
@@ -31,7 +29,6 @@ class SnippetsBufferWindowMemory(ConversationBufferWindowMemory):
         Based on the user inputs, search the index and add the similar snippets to memory (but only if they aren't in the
         memory already)
         """
-
         # Search snippets
         similar_snippets = search_faiss_index(self.index, inputs['user_messages_history'])
         # In order to respect the buffer size and make its pruning work, need to reverse the list, and then un-reverse it later
@@ -42,7 +39,7 @@ class SnippetsBufferWindowMemory(ConversationBufferWindowMemory):
         for snippet in similar_snippets:
             page_number = snippet.metadata['page']
             # Load into memory only new snippets
-            snippet_to_add = f"The following snippet was extracted from the following document: "
+            snippet_to_add = f"The snippet was extracted from the document: \n"
             if snippet.metadata['title'] == snippet.metadata['source']:
                 snippet_to_add += f"{snippet.metadata['source']}\n"
             else:
@@ -65,9 +62,6 @@ class SnippetsBufferWindowMemory(ConversationBufferWindowMemory):
 
 
 def construct_conversation(prompt: str, llm, memory) -> ConversationChain:
-    """
-    Construct a ConversationChain object
-    """
 
     prompt = PromptTemplate.from_template(
         template=prompt,
@@ -89,15 +83,27 @@ def initialize_chat_conversation(index: FAISS,
 
 # Answer the question based on the context below. Keep the answer short and concise. Respond "Unsure about answer" if not sure about the answer.
 # You are an expert, tasked with helping customers with their questions. They will ask you questions and provide technical snippets that may or may not contain the answer, and it's your job to find the answer if possible, while taking into account the entire conversation context.
-    prompt_header = """Answer the question based on the context below. Keep the answer short and concise. Respond "Unsure about answer" if not sure about the answer.
+    prompt_header = """ You are an expert, tasked with helping customers with their questions. Answer the question based on the context. They will ask you questions and provide snippets that may or may not contain the answer, and it's your job to find the answer if possible, while taking into account the entire conversation context.
+
     The following snippets can be used to help you answer the questions:    
-    {snippets}    
+    {snippets}
     The following is a friendly conversation between a customer and you. Please answer the customer's needs based on the provided snippets and the conversation history. Make sure to take the previous messages in consideration, as they contain additional context.
     If the provided snippets don't include the answer, please say so, and don't try to make up an answer instead. Include in your reply the title of the document and the page from where your answer is coming from, if applicable.
 
     {history}    
     Customer: {input}
     """
+    # """Answer the question based on the context below. Keep the answer short and concise. Respond "Unsure about answer" if not sure about the answer.
+    # The following snippets can be used to help you answer the questions:    
+    # {snippets}    
+    # The following is a friendly conversation between a customer and you. Please answer the customer's needs based on the provided snippets and the conversation history. Make sure to take the previous messages in consideration, as they contain additional context.
+    # If the provided snippets don't include the answer, please say so, and don't try to make up an answer instead. Include in your reply the title of the document and the page from where your answer is coming from, if applicable.
+
+    # {history}    
+    # Customer: {input}
+    # """
+    
+
 
     llm = ChatOpenAI(model_name=model_to_use, max_tokens=max_tokens)
     conv_memory = ConversationBufferWindowMemory(k=3, input_key="input")
