@@ -36,41 +36,9 @@ UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-search_number_messages = 1
+search_number_messages = 3
 
 uploaded_files = []
-
-# def get_pdf_text(file):
-#     text = None
-#     if file:
-#         pdf_reader = PdfReader(file)
-#         text = ''.join(page.extract_text() for page in pdf_reader.pages)
-#     return text
-
-
-# def get_text_chunks(text):
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-#     chunks = text_splitter.split_text(text)
-#     return chunks
-
-
-# def get_vectorstore(text_chunks):
-#     api_key = os.getenv("OPENAI_API_KEY")
-#     embeddings = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=api_key)
-#     vectorstore = FAISS.from_texts(text_chunks, embeddings)
-#     return vectorstore
-
-
-# def get_conversation_chain(vectorstore):
-#     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7)
-#     memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
-#     conversation_chain = ConversationalRetrievalChain.from_llm(
-#         llm=llm,
-#         retriever=vectorstore.as_retriever(),
-#         memory=memory
-#     )
-#     return conversation_chain
-
 
 def prepare_session():
     session.permanent = True
@@ -78,7 +46,6 @@ def prepare_session():
     if 'conversation_memory' not in session:
         session['conversation_memory'] = None
 
-    # Initialize chat history used by StreamLit (for display purposes)
     if "messages" not in session:
         session["messages"] = []
 
@@ -103,7 +70,6 @@ def index():
 @app.route('/clear', methods=['GET'])
 def clear_session():
     session.clear()
-    # TODO: clear /tmp folder
     return redirect('/')
 
 @app.route('/upload', methods=['POST'])
@@ -132,70 +98,29 @@ def upload_file():
 def ask_question():
     prepare_session()
     sn_list = []
-    # if session['last_update'] != session['last_indexed']:
     urls = []
     for file_name in session['files']:
         urls.append(os.path.join("uploads", secure_filename(file_name)))
     faiss_index = download_and_index_pdf(urls, session)
-        # session['last_indexed'] = session['last_update']
 
     if request.method == 'POST':
         query = request.form.get('question')
-        # if query:
-            # session["messages"].append({"role": "user", "content": query})
-            # session.modified = True
     else:
         query = request.args.get('query')
-    
-    # conversation_memory = session.get('conversation_memory')
-    # user_messages_history = [message['content'] for message in session.get('messages')[-search_number_messages:] if message['role'] == 'user']
-    # user_messages_history = '\n '.join(user_messages_history)
 
     response = ""
-
     if len(session.get('files')) == 0:
         response = "FAISS index not found. Please upload PDFs first."
     else:
         if query:
             
             session["messages"].append({"role": "user", "content": query})
-
-            # faiss_index = None
-
-
-
-
-            # with open(os.path.join('tmp', session['faiss_index']), "rb") as f:
-                
-            #     local_vectorstore: VectorStore = pickle.load(f)
-
-
-
-
-
-            # with open(os.path.join('tmp', session['faiss_index']), 'rb') as f:
-            #     faiss_index = FAISS.deserialize_from_bytes(embeddings=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"), serialized=f.read())
-            # conversation_memory = session['conversation_memory']
-            
             user_messages_history = [message['content'] for message in session.get('messages')[-search_number_messages:] if message['role'] == 'user']
             user_messages_history = '\n'.join(user_messages_history)
 
             response = ""
-
-            # if not faiss_index:
-            #     response = "FAISS index not found. Please upload PDFs first."
-            # else:
-                # if not conversation_memory:
-                    # faiss_index = FAISS.read_index("index_filename.index")
             conversation = initialize_chat_conversation(faiss_index)
-                    # session['conversation_memory'] = conversation
             conversation_memory = conversation
-                # else:
-                #     conversation = session['conversation_memory']
-                
-            # print("------------")
-            # print(type(conversation_memory))
-            # print("------------")
             response = conversation_memory.predict(input=query, user_messages_history=user_messages_history)
             session.modified = True
                 
@@ -204,15 +129,10 @@ def ask_question():
             for page_number, snippet in zip(snippet_memory.pages, snippet_memory.snippets):
                 snippet = re.sub("<START_SNIPPET_PAGE_\d+>", '', snippet)
                 snippet = re.sub("<END_SNIPPET_PAGE_\d+>", '', snippet)
-                session["messages"].append({"role": "snippets", "content": f' >>> Snippet from page {page_number + 1} \n\n  + {snippet}'})
+                session["messages"].append({"role": "snippets", "content": f' \n>>> Snippet from page {page_number + 1} \n {snippet}'})
 
-
-            # session["messages"].append({"role": "user", "content": query})
             session["messages"].append({"role": "assistant", "content": response})
 
-            print(session["messages"])
-            print("-------------------------------------------------------")
-            print(session["messages"]["role" == "snippets"])
     return render_template('ask_question.html', files=session['files'], session=reversed(session["messages"]))
 
 if __name__ == '__main__':
