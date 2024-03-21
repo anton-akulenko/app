@@ -23,4 +23,4 @@ Upload the PDF documents that are relevant to your queries, and start chatting w
 
 The provided PDFs will be uploaded and properly split into chunks, and finally embedding vectors for each chunk will be generated using OpenAI service. These vectors are then indexed using FAISS, and can be quickly retrieved.
 
-As the user interacts with the bot, new relevant document chunks/snippets are retrieved and added to the session memory, alongside the past few messages. These snippets and messages are part of the prompt sent to the LLM; this way, the model will have as context not just the latest message and retrieved snippet, but past ones as well.
+As the user interacts with the bot, relevant document chunks/snippets are retrieved and added to the memory, alongside the past few messages. These snippets and messages are part of the prompt sent to the LLM; this way, the model will have as context not just the latest message and retrieved snippet, but past ones as well.
