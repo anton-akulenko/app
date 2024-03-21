@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ask Question</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .question-form {
+            flex: 1 0 70%;
+            padding-right: 20px;
+        }
+        .file-list {
+            flex: 1 0 30%;
+            padding-left: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            text-align: center;
+            margin-top: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .back-button {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .messages {
+            overflow-y: auto;
+            max-height: 300px;
+            margin-bottom: 20px;
+        }
+        .user-message {
+            text-align: left;
+            background-color: #e6f2ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .assistant-message {
+            text-align: right;
+            background-color: #d9f9d9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .snippet {
+            text-align: right;
+            background-color: #72d0d6;
+            font-size: small;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="question-form">
+            <h1>Ask a Question</h1>
+            <form action="/ask_question" method="POST">
+                <label for="question">Question:</label>
+                <input type="text" id="question" name="question">
+                <button type="submit">Submit</button><br>
+                <label for="answer">Answer:</label>
+                <div class="messages">
+                    {% for message in session %}
+                        {% if message["role"] == "user" %}
+                            <div class="user-message">User message: {{ message["content"] }}</div>
+                        {% elif message["role"] == "assistant" %}
+                            <div class="assistant-message">AI answer: {{ message["content"] }}</div>
+                        {% elif message["role"] == "snippets" %}
+                            <div class="snippet"> Snippet: {{ message["content"] }}</div>
+                        
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </form>
+            <a href="/" class="back-button"><button>Back</button></a>
+        </div>
+        <div class="file-list">
+            <h2>Uploaded Files:</h2>
+            <ul>
+                {% for file in files %}
+                    <li>{{ file }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
