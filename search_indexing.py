@@ -1,21 +1,16 @@
 import PyPDF2
-import os
-import requests
-import pickle
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders.pdf import PyPDFium2Loader
-from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_community.document_loaders.pdf import PyPDFium2Loader
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
 
 chunk_size = 500
 chunk_overlap = 50
 
 number_snippets_to_retrieve = 3
 
+
 def download_and_index_pdf(filepaths: list[str], session) -> FAISS:
-
-
     def __update_metadata(pages, filepath):
 
         for page in pages:
@@ -42,8 +37,8 @@ def download_and_index_pdf(filepaths: list[str], session) -> FAISS:
 
     return faiss_index
 
-def search_faiss_index(faiss_index: FAISS, query: str, top_k: int = number_snippets_to_retrieve) -> list:
 
+def search_faiss_index(faiss_index: FAISS, query: str, top_k: int = number_snippets_to_retrieve) -> list:
     docs = faiss_index.similarity_search(query, k=top_k)
 
     return docs

@@ -14,6 +14,8 @@ from search_indexing import download_and_index_pdf
 load_dotenv()
 
 app = Flask(__name__)
+
+
 app.secret_key = os.getenv("SECRET_FLASK")
 api_key = os.getenv("OPENAI_API_KEY")
 UPLOAD_FOLDER = 'uploads'

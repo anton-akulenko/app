@@ -1,13 +1,15 @@
-from langchain_community.vectorstores import FAISS
-from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferWindowMemory, CombinedMemory
 from langchain.prompts import PromptTemplate
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.vectorstores import FAISS
+
 from search_indexing import search_faiss_index
 
 prompt_number_snippets = 5
 gpt_model_to_use = 'gpt-3.5-turbo'
 gpt_max_tokens = 1000
+
 
 class SnippetsBufferWindowMemory(ConversationBufferWindowMemory):
     """
@@ -62,7 +64,6 @@ class SnippetsBufferWindowMemory(ConversationBufferWindowMemory):
 
 
 def construct_conversation(prompt: str, llm, memory) -> ConversationChain:
-
     prompt = PromptTemplate.from_template(
         template=prompt,
     )
@@ -80,9 +81,8 @@ def construct_conversation(prompt: str, llm, memory) -> ConversationChain:
 def initialize_chat_conversation(index: FAISS,
                                  model_to_use: str = gpt_model_to_use,
                                  max_tokens: int = gpt_max_tokens) -> ConversationChain:
-
-# Answer the question based on the context below. Keep the answer short and concise. Respond "Unsure about answer" if not sure about the answer.
-# You are an expert, tasked with helping customers with their questions. They will ask you questions and provide technical snippets that may or may not contain the answer, and it's your job to find the answer if possible, while taking into account the entire conversation context.
+    # Answer the question based on the context below. Keep the answer short and concise. Respond "Unsure about answer" if not sure about the answer.
+    # You are an expert, tasked with helping customers with their questions. They will ask you questions and provide technical snippets that may or may not contain the answer, and it's your job to find the answer if possible, while taking into account the entire conversation context.
     prompt_header = """ You are an expert, tasked with helping customers with their questions. Answer the question based on the context. They will ask you questions and provide snippets that may or may not contain the answer, and it's your job to find the answer if possible, while taking into account the entire conversation context.
 
     The following snippets can be used to help you answer the questions:    
@@ -102,12 +102,11 @@ def initialize_chat_conversation(index: FAISS,
     # {history}    
     # Customer: {input}
     # """
-    
-
 
     llm = ChatOpenAI(model_name=model_to_use, max_tokens=max_tokens)
     conv_memory = ConversationBufferWindowMemory(k=3, input_key="input")
-    snippets_memory = SnippetsBufferWindowMemory(k=prompt_number_snippets, index=index, memory_key='snippets', input_key="snippets")
+    snippets_memory = SnippetsBufferWindowMemory(k=prompt_number_snippets, index=index, memory_key='snippets',
+                                                 input_key="snippets")
     memory = CombinedMemory(memories=[conv_memory, snippets_memory])
 
     conversation = construct_conversation(prompt_header, llm, memory)
