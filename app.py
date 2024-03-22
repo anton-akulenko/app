@@ -136,4 +136,4 @@ def ask_question():
     return render_template('ask_question.html', files=session['files'], session=reversed(session["messages"]))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
