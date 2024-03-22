@@ -12,6 +12,8 @@ User needs to provide their own OpenAI API key (.env).
 ## Instalation:
 
 Just clone the repo and install the requirements using ```pip install -r requirements.txt```
+You need to re-create .env file from the uploaded .env-example. 
+Replace your OPENAI_API_KEY
 
 ## How to run locally:
 
