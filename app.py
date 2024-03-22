@@ -1,33 +1,17 @@
 import os
-import tempfile
 import random
+import re
 import string
 from datetime import datetime
+
 from dotenv import load_dotenv
-from PyPDF2 import PdfReader
-from langchain_community.callbacks import get_openai_callback
-
-from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
-import openai
-
-from langchain.vectorstores.faiss import FAISS
-from flask import Flask, render_template, request, flash, session, redirect, url_for
-from io import BytesIO
+from flask import Flask, render_template, request, session, redirect
+from werkzeug.utils import secure_filename
 
 from langchain_utils import initialize_chat_conversation
 from search_indexing import download_and_index_pdf
-import re
-from werkzeug.utils import secure_filename
-from langchain.vectorstores import VectorStore
-import pickle
 
 load_dotenv()
-
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_FLASK")
@@ -40,9 +24,10 @@ search_number_messages = 3
 
 uploaded_files = []
 
+
 def prepare_session():
     session.permanent = True
-    
+
     if 'conversation_memory' not in session:
         session['conversation_memory'] = None
 
@@ -58,25 +43,27 @@ def prepare_session():
     if 'last_indexed' not in session:
         session['last_indexed'] = None
 
-
     if "faiss_index" not in session:
         session['faiss_index'] = ''.join(random.choices(string.ascii_uppercase + string.digits, k=20))
+
 
 @app.route('/')
 def index():
     prepare_session()
     return render_template('upload.html', files=session['files'])
 
+
 @app.route('/clear', methods=['GET'])
 def clear_session():
     session.clear()
     return redirect('/')
 
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     urls = []
     prepare_session()
-    
+
     pdf_file = request.files['pdf_to_upload']
 
     if pdf_file.filename != '':
@@ -93,6 +80,7 @@ def upload_file():
             session.modified = True
 
     return render_template('upload.html', files=session['files'])
+
 
 @app.route('/ask_question', methods=['POST', 'GET'])
 def ask_question():
@@ -113,27 +101,28 @@ def ask_question():
         response = "FAISS index not found. Please upload PDFs first."
     else:
         if query:
-            
+
             session["messages"].append({"role": "user", "content": query})
             user_messages_history = [message['content'] for message in session.get('messages')[-search_number_messages:] if message['role'] == 'user']
             user_messages_history = '\n'.join(user_messages_history)
 
-            response = ""
             conversation = initialize_chat_conversation(faiss_index)
             conversation_memory = conversation
             response = conversation_memory.predict(input=query, user_messages_history=user_messages_history)
             session.modified = True
-                
+
             snippet_memory = conversation.memory.memories[1]
-            
+
             for page_number, snippet in zip(snippet_memory.pages, snippet_memory.snippets):
                 snippet = re.sub("<START_SNIPPET_PAGE_\d+>", '', snippet)
                 snippet = re.sub("<END_SNIPPET_PAGE_\d+>", '', snippet)
-                session["messages"].append({"role": "snippets", "content": f' \n>>> Snippet from page {page_number + 1} \n {snippet}'})
+                session["messages"].append(
+                    {"role": "snippets", "content": f' \n>>> Snippet from page {page_number + 1} \n {snippet}'})
 
             session["messages"].append({"role": "assistant", "content": response})
 
     return render_template('ask_question.html', files=session['files'], session=reversed(session["messages"]))
+
 
 if __name__ == '__main__':
     app.run(debug=False)
